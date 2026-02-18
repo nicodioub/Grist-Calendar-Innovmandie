@@ -161,6 +161,7 @@ class CalendarHandler {
       month: {
         dayNames: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
         alldayView: false,
+        workweek: true,
       },
       
       usageStatistics: false,
