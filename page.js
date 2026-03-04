@@ -557,12 +557,16 @@ async function translatePage() {
 // Navigation to a record's date is only allowed after the initial data load (onRecords) has fired.
 // This prevents the calendar from jumping away from today when Grist fires onRecord on startup.
 let _calendarDataLoaded = false;
+const _startupTimeMs = Date.now();
+const _startupNavigationBlockMs = 5000;
 
 // When a user selects a record in the table, we want to select it on the calendar.
 function gristSelectedRecordChanged(record, mappings) {
   const mappedRecord = grist.mapColumnNames(record, mappings);
   if (mappedRecord && calendarHandler) {
-    calendarHandler.selectRecord(mappedRecord, _calendarDataLoaded);
+    const startupBlockPassed = Date.now() - _startupTimeMs > _startupNavigationBlockMs;
+    const shouldNavigateToDate = _calendarDataLoaded && startupBlockPassed;
+    calendarHandler.selectRecord(mappedRecord, shouldNavigateToDate);
   }
 }
 
