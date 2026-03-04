@@ -302,7 +302,7 @@ class CalendarHandler {
     return isItMonthView &&  !isEventMultiDay
   }
 
-  async selectRecord(record) {
+  async selectRecord(record, navigateToDate = true) {
     if (!isRecordValid(record) || this._selectedRecordId === record.id) {
       return;
     }
@@ -312,7 +312,9 @@ class CalendarHandler {
     }
     const [startType] = await colTypesFetcher.getColTypes();
     const startDate = getAdjustedDate(record.startDate, startType);
-    this.calendar.setDate(startDate);
+    if (navigateToDate) {
+      this.calendar.setDate(startDate);
+    }
     this._selectedRecordId = record.id;
     updateUIAfterNavigation();
 
@@ -552,11 +554,16 @@ async function translatePage() {
   });
 }
 
+// On the very first load, stay on today's date instead of jumping to the selected record's date.
+let _calendarFirstLoad = true;
+
 // When a user selects a record in the table, we want to select it on the calendar.
 function gristSelectedRecordChanged(record, mappings) {
   const mappedRecord = grist.mapColumnNames(record, mappings);
   if (mappedRecord && calendarHandler) {
-    calendarHandler.selectRecord(mappedRecord);
+    const navigateToDate = !_calendarFirstLoad;
+    _calendarFirstLoad = false;
+    calendarHandler.selectRecord(mappedRecord, navigateToDate);
   }
 }
 
