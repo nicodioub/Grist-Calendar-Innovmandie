@@ -554,16 +554,15 @@ async function translatePage() {
   });
 }
 
-// On the very first load, stay on today's date instead of jumping to the selected record's date.
-let _calendarFirstLoad = true;
+// Navigation to a record's date is only allowed after the initial data load (onRecords) has fired.
+// This prevents the calendar from jumping away from today when Grist fires onRecord on startup.
+let _calendarDataLoaded = false;
 
 // When a user selects a record in the table, we want to select it on the calendar.
 function gristSelectedRecordChanged(record, mappings) {
   const mappedRecord = grist.mapColumnNames(record, mappings);
   if (mappedRecord && calendarHandler) {
-    const navigateToDate = !_calendarFirstLoad;
-    _calendarFirstLoad = false;
-    calendarHandler.selectRecord(mappedRecord, navigateToDate);
+    calendarHandler.selectRecord(mappedRecord, _calendarDataLoaded);
   }
 }
 
@@ -775,6 +774,9 @@ function buildCalendarEventObject(record, colTypes, colOptions) {
 // when some CRUD operation is performed on the table, we want to update the calendar
 async function updateCalendar(records, mappings) {
   if (mappings) { colTypesFetcher.gotMappings(mappings); }
+
+  // From now on, selecting a record in the table will navigate the calendar to its date.
+  _calendarDataLoaded = true;
 
   const mappedRecords = grist.mapColumnNames(records, mappings);
   // if any records were successfully mapped, create or update them in the calendar
