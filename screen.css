@@ -472,6 +472,10 @@ input:checked + label {
   display: none;
 }
 
+.toastui-calendar-month-week-item.calendar-month-empty-row {
+  display: none;
+}
+
 .toastui-calendar-daygrid-cell.calendar-month-last-visible-cell {
   border-right: 1px solid var(--grist-theme-table-body-border);
 }
