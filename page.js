@@ -445,7 +445,18 @@ class CalendarHandler {
         return !isCurrentMonth && !isPreviousMonth;
       });
       row.classList.toggle('calendar-month-empty-row', allTrailing);
+      // Reset any previously forced height so the recalculation below is clean.
+      row.style.height = '';
     });
+
+    // Redistribute height equally among visible rows so they fill the container.
+    const visibleRows = Array.from(rows).filter(
+      (row) => !row.classList.contains('calendar-month-empty-row')
+    );
+    if (visibleRows.length > 0) {
+      const rowHeightPct = (100 / visibleRows.length).toFixed(6) + '%';
+      visibleRows.forEach((row) => { row.style.height = rowHeightPct; });
+    }
   }
 
   syncMonthGridVisibility() {
