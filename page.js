@@ -376,8 +376,11 @@ class CalendarHandler {
 
   _updateMonthGridVisibility() {
     const container = document.getElementById('calendar');
-    container.querySelectorAll('.calendar-month-outside-current-month').forEach((cell) => {
-      cell.classList.remove('calendar-month-outside-current-month');
+    container.querySelectorAll('.calendar-month-leading-outside-current-month').forEach((cell) => {
+      cell.classList.remove('calendar-month-leading-outside-current-month');
+    });
+    container.querySelectorAll('.calendar-month-trailing-outside-current-month').forEach((cell) => {
+      cell.classList.remove('calendar-month-trailing-outside-current-month');
     });
     container.querySelectorAll('.calendar-month-last-visible-cell').forEach((cell) => {
       cell.classList.remove('calendar-month-last-visible-cell');
@@ -401,8 +404,14 @@ class CalendarHandler {
       cells.forEach((cell, cellIndex) => {
         const date = weekDates[cellIndex];
         const isCurrentMonth = date && date.getMonth() === month && date.getFullYear() === year;
-        cell.classList.toggle('calendar-month-outside-current-month', !isCurrentMonth);
-        if (isCurrentMonth) {
+        const isPreviousMonth = date && (date.getFullYear() < year ||
+          (date.getFullYear() === year && date.getMonth() < month));
+        const isTrailingMonth = date && !isCurrentMonth && !isPreviousMonth;
+
+        cell.classList.toggle('calendar-month-leading-outside-current-month', Boolean(isPreviousMonth));
+        cell.classList.toggle('calendar-month-trailing-outside-current-month', Boolean(isTrailingMonth));
+
+        if (!isTrailingMonth) {
           lastVisibleCell = cell;
         }
       });
