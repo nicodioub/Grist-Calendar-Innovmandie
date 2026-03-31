@@ -379,6 +379,9 @@ class CalendarHandler {
     container.querySelectorAll('.calendar-month-outside-current-month').forEach((cell) => {
       cell.classList.remove('calendar-month-outside-current-month');
     });
+    container.querySelectorAll('.calendar-month-last-visible-cell').forEach((cell) => {
+      cell.classList.remove('calendar-month-last-visible-cell');
+    });
 
     if (this.calendar.getViewName() !== 'month') {
       return;
@@ -393,12 +396,18 @@ class CalendarHandler {
     rows.forEach((row, rowIndex) => {
       const cells = row.querySelectorAll('.toastui-calendar-daygrid-cell');
       const weekDates = dateMatrix[rowIndex] ?? [];
+      let lastVisibleCell = null;
 
       cells.forEach((cell, cellIndex) => {
         const date = weekDates[cellIndex];
         const isCurrentMonth = date && date.getMonth() === month && date.getFullYear() === year;
         cell.classList.toggle('calendar-month-outside-current-month', !isCurrentMonth);
+        if (isCurrentMonth) {
+          lastVisibleCell = cell;
+        }
       });
+
+      lastVisibleCell?.classList.add('calendar-month-last-visible-cell');
     });
   }
 
