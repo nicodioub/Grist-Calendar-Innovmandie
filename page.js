@@ -365,41 +365,6 @@ class CalendarHandler {
   }
 
   // change calendar perspective between week, month and day.
-  // Restrict the month view to only the weeks that contain at least one Mon–Fri day
-  // of the current month, preventing extra rows filled entirely with next-month days.
-  adjustMonthWeeks() {
-    if (this.calendar.getViewName() !== 'month') { return; }
-    const date = this.calendar.getDate().toDate();
-    const year = date.getFullYear();
-    const month = date.getMonth();
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay  = new Date(year, month + 1, 0);
-
-    // Mon-based day-of-week: Mon=0 … Fri=4, Sat=5, Sun=6
-    const firstDow = (firstDay.getDay() + 6) % 7;
-    const lastDow  = (lastDay.getDay()  + 6) % 7;
-
-    // First Monday whose Mon–Fri span includes at least one day of this month.
-    const firstWeekStart = new Date(firstDay);
-    if (firstDow <= 4) {
-      firstWeekStart.setDate(firstDay.getDate() - firstDow);
-    } else {
-      // Month starts on Sat/Sun → first workday is the following Monday.
-      firstWeekStart.setDate(firstDay.getDate() + (7 - firstDow));
-    }
-
-    // Last Monday whose Mon–Fri span includes at least one day of this month.
-    const lastWeekStart = new Date(lastDay);
-    lastWeekStart.setDate(lastDay.getDate() - lastDow);
-    // For Sat (5) or Sun (6): Mon–Fri of that week = (lastDay-lastDow) … (lastDay-lastDow+4),
-    // all still within the current month since the month has ≥ 28 days.
-
-    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-    const visibleWeeksCount = Math.max(1, Math.round((lastWeekStart - firstWeekStart) / msPerWeek) + 1);
-    this.calendar.setOptions({ month: { visibleWeeksCount } });
-  }
-
   changeView(calendarViewPerspective) {
     this.calendar.changeView(calendarViewPerspective);
     updateUIAfterNavigation();
@@ -534,7 +499,6 @@ function getGristOptions() {
 
 
 function updateUIAfterNavigation() {
-  calendarHandler.adjustMonthWeeks();
   calendarHandler.renderVisibleEvents();
   // update name of the month and year displayed on the top of the widget
   document.getElementById('calendar-title').innerText = getMonthName();
