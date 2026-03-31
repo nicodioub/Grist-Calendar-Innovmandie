@@ -397,6 +397,9 @@ class CalendarHandler {
     container.querySelectorAll('.calendar-month-trailing-outside-current-month').forEach((cell) => {
       cell.classList.remove('calendar-month-trailing-outside-current-month');
     });
+    container.querySelectorAll('.calendar-month-empty-row').forEach((row) => {
+      row.classList.remove('calendar-month-empty-row');
+    });
     container.querySelectorAll('.calendar-month-last-visible-cell').forEach((cell) => {
       cell.classList.remove('calendar-month-last-visible-cell');
     });
@@ -432,6 +435,16 @@ class CalendarHandler {
       });
 
       lastVisibleCell?.classList.add('calendar-month-last-visible-cell');
+
+      // Hide the entire row if every cell is a trailing next-month day.
+      const allTrailing = weekDates.length > 0 && weekDates.every((date) => {
+        if (!date) { return true; }
+        const isCurrentMonth = date.getMonth() === month && date.getFullYear() === year;
+        const isPreviousMonth = date.getFullYear() < year ||
+          (date.getFullYear() === year && date.getMonth() < month);
+        return !isCurrentMonth && !isPreviousMonth;
+      });
+      row.classList.toggle('calendar-month-empty-row', allTrailing);
     });
   }
 
