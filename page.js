@@ -162,6 +162,7 @@ class CalendarHandler {
         dayNames: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
         alldayView: false,
         workweek: true,
+        isAlways6Weeks: false,
       },
       
       usageStatistics: false,
@@ -290,6 +291,126 @@ class CalendarHandler {
 
     // Ids of visible events that fall within the current date range. */
     this._visibleEventIds = new Set();
+
+    this._monthLayoutFrame = null;
+  }
+
+  _cloneCalendarDate(sourceDate, nextValue) {
+    return TZDate && sourceDate instanceof TZDate ? new TZDate(nextValue) : new Date(nextValue);
+  }
+
+  _getCurrentMonthRange() {
+    const renderDate = this.calendar.getDate().toDate();
+    const monthStart = new Date(renderDate.getFullYear(), renderDate.getMonth(), 1);
+    const monthEnd = new Date(renderDate.getFullYear(), renderDate.getMonth() + 1, 0, 23, 59, 59, 999);
+    return {monthStart, monthEnd};
+  }
+
+  _getVisibleDateRange() {
+    if (this.calendar.getViewName() === 'month') {
+      return this._getCurrentMonthRange();
+    }
+
+    return {
+      monthStart: this.calendar.getDateRangeStart(),
+      monthEnd: this.calendar.getDateRangeEnd().setHours(23, 59, 59, 999),
+    };
+  }
+
+  _clipMonthViewEvent(event, monthStart, monthEnd) {
+    if (this.calendar.getViewName() !== 'month') {
+      return event;
+    }
+
+    const clippedStart = event.start < monthStart ? this._cloneCalendarDate(event.start, monthStart) : event.start;
+    const clippedEnd = event.end > monthEnd ? this._cloneCalendarDate(event.end, monthEnd) : event.end;
+
+    if (clippedStart === event.start && clippedEnd === event.end) {
+      return event;
+    }
+
+    return {
+      ...event,
+      start: clippedStart,
+      end: clippedEnd,
+    };
+  }
+
+  _getMonthDateMatrix() {
+    const renderDate = this.calendar.getDate().toDate();
+    const monthOptions = this.calendar.getOptions().month ?? {};
+    const workweek = monthOptions.workweek ?? false;
+    const startDayOfWeek = monthOptions.startDayOfWeek ?? 0;
+    const isAlways6Weeks = monthOptions.isAlways6Weeks ?? true;
+
+    const firstDayOfMonth = new Date(renderDate.getFullYear(), renderDate.getMonth(), 1);
+    const firstDateOfMatrix = new Date(firstDayOfMonth);
+    const dayOffset = firstDayOfMonth.getDay() - startDayOfWeek +
+      (firstDayOfMonth.getDay() < startDayOfWeek ? 7 : 0);
+    firstDateOfMatrix.setDate(firstDayOfMonth.getDate() - dayOffset);
+
+    const dayOfFirstDateOfMatrix = firstDateOfMatrix.getDay();
+    const totalDatesCountOfMonth = new Date(renderDate.getFullYear(), renderDate.getMonth() + 1, 0).getDate();
+    const initialDifference = Math.round((firstDayOfMonth - firstDateOfMatrix) / (24 * 60 * 60 * 1000));
+    const totalDatesOfMatrix = totalDatesCountOfMonth + Math.abs(initialDifference);
+    const totalWeeks = isAlways6Weeks ? 6 : Math.ceil(totalDatesOfMatrix / 7);
+
+    return Array.from({length: totalWeeks}, (_, weekIndex) => {
+      const row = [];
+
+      for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek += 1) {
+        const steps = weekIndex * 7 + dayOfWeek;
+        const currentDay = (steps + dayOfFirstDateOfMatrix) % 7;
+        if (workweek && (currentDay === 0 || currentDay === 6)) {
+          continue;
+        }
+
+        const date = new Date(firstDateOfMatrix);
+        date.setDate(firstDateOfMatrix.getDate() + steps);
+        row.push(date);
+      }
+
+      return row;
+    });
+  }
+
+  _updateMonthGridVisibility() {
+    const container = document.getElementById('calendar');
+    container.querySelectorAll('.calendar-month-outside-current-month').forEach((cell) => {
+      cell.classList.remove('calendar-month-outside-current-month');
+    });
+
+    if (this.calendar.getViewName() !== 'month') {
+      return;
+    }
+
+    const renderDate = this.calendar.getDate().toDate();
+    const month = renderDate.getMonth();
+    const year = renderDate.getFullYear();
+    const dateMatrix = this._getMonthDateMatrix();
+    const rows = container.querySelectorAll('.toastui-calendar-month-week-item');
+
+    rows.forEach((row, rowIndex) => {
+      const cells = row.querySelectorAll('.toastui-calendar-daygrid-cell');
+      const weekDates = dateMatrix[rowIndex] ?? [];
+
+      cells.forEach((cell, cellIndex) => {
+        const date = weekDates[cellIndex];
+        const isCurrentMonth = date && date.getMonth() === month && date.getFullYear() === year;
+        cell.classList.toggle('calendar-month-outside-current-month', !isCurrentMonth);
+      });
+    });
+  }
+
+  syncMonthGridVisibility() {
+    if (this._monthLayoutFrame) {
+      cancelAnimationFrame(this._monthLayoutFrame);
+    }
+
+    this._monthLayoutFrame = requestAnimationFrame(() => {
+      this._monthLayoutFrame = null;
+      this._updateMonthGridVisibility();
+    });
   }
 
   _isMultidayInMonthViewEvent(rec)  {
@@ -408,8 +529,7 @@ class CalendarHandler {
    */
   renderVisibleEvents() {
     const newVisibleEventIds = new Set();
-    const dateRangeStart = this.calendar.getDateRangeStart();
-    const dateRangeEnd = this.calendar.getDateRangeEnd().setHours(23, 99, 99, 999);
+    const {monthStart: dateRangeStart, monthEnd: dateRangeEnd} = this._getVisibleDateRange();
 
     // Add or update events that are now visible.
     for (const event of this._allEvents.values()) {
@@ -419,12 +539,14 @@ class CalendarHandler {
         (event.start < dateRangeStart && event.end > dateRangeEnd)
       );
       if (!isEventInRange) { continue; }
+
+      const displayEvent = this._clipMonthViewEvent(event, dateRangeStart, dateRangeEnd);
   
       const calendarEvent = this.calendar.getEvent(event.id, CALENDAR_NAME);
       if (!calendarEvent) {
-        this.calendar.createEvents([event]);
+        this.calendar.createEvents([displayEvent]);
       } else {
-        this.calendar.updateEvent(event.id, CALENDAR_NAME, event);
+        this.calendar.updateEvent(event.id, CALENDAR_NAME, displayEvent);
       }
       newVisibleEventIds.add(event.id);
     }
@@ -500,6 +622,7 @@ function getGristOptions() {
 
 function updateUIAfterNavigation() {
   calendarHandler.renderVisibleEvents();
+  calendarHandler.syncMonthGridVisibility();
   // update name of the month and year displayed on the top of the widget
   document.getElementById('calendar-title').innerText = getMonthName();
   // refresh colors of selected event (in month view it's different from in other views)
