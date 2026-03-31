@@ -293,6 +293,21 @@ class CalendarHandler {
     this._visibleEventIds = new Set();
 
     this._monthLayoutFrame = null;
+    this._setupMonthMutationObserver();
+  }
+
+  _setupMonthMutationObserver() {
+    const container = document.getElementById('calendar');
+    let rafId = null;
+    this._mutationObserver = new MutationObserver(() => {
+      if (this.calendar.getViewName() !== 'month') { return; }
+      if (rafId) { cancelAnimationFrame(rafId); }
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        this._updateMonthGridVisibility();
+      });
+    });
+    this._mutationObserver.observe(container, {childList: true, subtree: true});
   }
 
   _cloneCalendarDate(sourceDate, nextValue) {
