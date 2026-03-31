@@ -463,6 +463,11 @@ input:checked + label {
   color: var(--grist-theme-text-light, var(--grist-theme-text)) !important;
 }
 
+/* Remove the "today" circle on leading previous-month cells */
+.toastui-calendar-daygrid-cell.calendar-month-leading-outside-current-month .toastui-calendar-weekday-grid-date-decorator {
+  background-color: transparent !important;
+}
+
 .toastui-calendar-daygrid-cell.calendar-month-trailing-outside-current-month {
   display: none;
 }
