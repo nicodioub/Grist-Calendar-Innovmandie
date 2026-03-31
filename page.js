@@ -436,15 +436,13 @@ class CalendarHandler {
 
       lastVisibleCell?.classList.add('calendar-month-last-visible-cell');
 
-      // Hide the entire row if every cell is a trailing next-month day.
-      const allTrailing = weekDates.length > 0 && weekDates.every((date) => {
+      // Hide the entire row if no cell belongs to the current month
+      // (all leading previous-month days, or all trailing next-month days).
+      const noCurrentMonthCell = weekDates.length > 0 && weekDates.every((date) => {
         if (!date) { return true; }
-        const isCurrentMonth = date.getMonth() === month && date.getFullYear() === year;
-        const isPreviousMonth = date.getFullYear() < year ||
-          (date.getFullYear() === year && date.getMonth() < month);
-        return !isCurrentMonth && !isPreviousMonth;
+        return date.getMonth() !== month || date.getFullYear() !== year;
       });
-      row.classList.toggle('calendar-month-empty-row', allTrailing);
+      row.classList.toggle('calendar-month-empty-row', noCurrentMonthCell);
       // Reset any previously forced height so the recalculation below is clean.
       row.style.height = '';
     });
