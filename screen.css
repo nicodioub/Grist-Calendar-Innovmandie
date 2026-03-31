@@ -453,7 +453,17 @@ input:checked + label {
   border-left: 1px solid var(--grist-theme-table-body-border);
 }
 
-.toastui-calendar-daygrid-cell.calendar-month-outside-current-month {
+.toastui-calendar-daygrid-cell.calendar-month-leading-outside-current-month {
+  opacity: 0.5;
+}
+
+.toastui-calendar-daygrid-cell.calendar-month-leading-outside-current-month .toastui-calendar-weekday-grid-date,
+.toastui-calendar-daygrid-cell.calendar-month-leading-outside-current-month .toastui-calendar-weekday-grid-date-decorator,
+.toastui-calendar-daygrid-cell.calendar-month-leading-outside-current-month .toastui-calendar-grid-cell-date {
+  color: var(--grist-theme-text-light, var(--grist-theme-text)) !important;
+}
+
+.toastui-calendar-daygrid-cell.calendar-month-trailing-outside-current-month {
   display: none;
 }
 
