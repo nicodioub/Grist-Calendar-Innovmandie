@@ -453,6 +453,10 @@ input:checked + label {
   border-left: 1px solid var(--grist-theme-table-body-border);
 }
 
+.toastui-calendar-daygrid-cell.calendar-month-outside-current-month {
+  display: none;
+}
+
 .toastui-calendar-day-names.toastui-calendar-month{
   padding: 0px;
 }
